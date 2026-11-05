@@ -1,0 +1,95 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ edits the text of a field: it can only be a triage key.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ modifie le texte d'un champ : il ne peut servir qu'aux touches du triage."
+          }
+        }
+      }
+    },
+    "%@ is already used by “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ est déjà pris par « %2$@ »."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is already used by “%2$@”."
+          }
+        }
+      }
+    },
+    "%@ is reserved by macOS or %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ est réservé par macOS ou par %2$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is reserved by macOS or %2$@."
+          }
+        }
+      }
+    },
+    "%@ would type text: add ⌘ or ⌃.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ écrirait du texte : ajoutez ⌘ ou ⌃."
+          }
+        }
+      }
+    },
+    "Space": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espace"
+          }
+        }
+      }
+    },
+    "This key doesn't make a shortcut (dead or composed key): try another one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette touche ne forme pas un raccourci (touche morte ou composée) : essayez-en une autre."
+          }
+        }
+      }
+    },
+    "“%@” keeps the system's shortcut.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » garde le raccourci du système."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
