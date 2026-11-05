@@ -47,9 +47,13 @@ store(try bindings.data(), under: "myapp.shortcuts")
 }
 ```
 
-A key is written as a macOS menu writes it: the modifiers in the order ⌃⌥⇧⌘, then one key (a character, ↑ ↓ ← → ↩ ⌫, or
+A key is written as a macOS menu writes it: the modifiers in the order ⌃⌥⇧⌘, then one key (a character, ↑ ↓ ← → ↩ ⌫ ⌦, or
 `Space`). A bare capital letter is typed with Shift (`⇧I`); Shift on a bare symbol is written as the symbol (`#`, not
-`⇧3`). The first key of a command is its menu key, unless it edits text (⌫, ⌘↓, ⌃E), which only a triage table reads.
+`⇧3`). The first key of a command is its menu key, unless it edits text (⌫, ⌘↓, ⌃E), which only a triage table reads. `Shortcut.editsText` follows the Cocoa text
+system's bindings (`StandardKeyBinding.dict`): ⌫ and ⌦ alone or with ⇧, ⌥, ⌃ or ⌘ alone; ⌘ or ⇧⌘ with an arrow; ⌃ with
+an Emacs letter. ⇧⌘⌫ (Empty Trash), ⌥⌘⌫, ⌃⌘← and ⌃⌘→ (Show Previous and Next Space), ⌥⌘← and ⌥⌘→ are menu keys.
+⌥ with an arrow is a menu key too, though the text system binds it (word moves): apps use ⌥↑ and ⌥↓ for the previous and
+next message.
 Each key may carry `from`, where it comes from. `notFound` lists the commands the source was checked for and does not
 document, either as a list or with a reason each; they inherit the parent set's keys, minus any key the set already
 gives to another command, and a reference marks them. Commands the parent has and the file does not mention inherit
@@ -85,4 +89,5 @@ is unique in the whole app.
 scan over the tree and the whole history. It fetches AppTooling at the version pinned in `scripts/apptooling.pin`.
 CI runs the same script.
 
-Releases are annotated tags `vX.Y.Z`, never moved. Consumers pin `exact:`.
+Releases are annotated tags `vX.Y.Z`, never moved. Apps pin `exact:`; kits depend on each other by patch range
+(`.upToNextMinor(from:)`), so an app's exact pin of AppSupportKit decides the version built.

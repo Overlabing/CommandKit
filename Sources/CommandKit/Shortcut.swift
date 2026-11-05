@@ -19,13 +19,15 @@ public struct Shortcut: Sendable, Hashable {
     public static let returnKey: Character = "\r"
     /// The Delete (backspace) key, as AppKit reports it (`NSDeleteCharacter`, `KeyEquivalent.delete`).
     public static let delete: Character = "\u{7F}"
+    /// The forward delete key, ⌦ (`NSDeleteFunctionKey`, `KeyEquivalent.deleteForward`).
+    public static let forwardDelete: Character = "\u{F728}"
     /// Escape (`KeyEquivalent.escape`): cancels a shortcut recorder, never bound.
     public static let escape: Character = "\u{1B}"
     /// Tab (`KeyEquivalent.tab`): moves the keyboard focus, never bound.
     public static let tab: Character = "\t"
 
     /// Keys that keep their modifiers as typed (⇧Space, ⌘↓, ⌘⌫), unlike a printable character that carries Shift.
-    static let specialKeys: Set<Character> = [space, returnKey, upArrow, downArrow, leftArrow, rightArrow, delete, escape, tab]
+    static let specialKeys: Set<Character> = [space, returnKey, upArrow, downArrow, leftArrow, rightArrow, delete, forwardDelete, escape, tab]
 
     public init(_ key: Character, _ modifiers: Set<Modifier> = [.command]) {
         self.key = key
@@ -71,7 +73,7 @@ public struct Shortcut: Sendable, Hashable {
         key == Self.space ? Self.modifierSymbols(modifiers) + "Space" : symbols
     }
 
-    /// Reads `notation`: modifiers ⌃⌥⇧⌘ then one key (a character, ↑ ↓ ← → ↩ ⌫ or « Space »). A capital letter under ⌘
+    /// Reads `notation`: modifiers ⌃⌥⇧⌘ then one key (a character, ↑ ↓ ← → ↩ ⌫ ⌦ or « Space »). A capital letter under ⌘
     /// or ⌃ is its lowercase key (« ⇧⌘R »); a bare « ⇧I » is the key « I » (see `init(characters:)`). `nil` for
     /// anything else, including Shift or Option on a bare non-letter character (« ⇧3 » is written « # »).
     public init?(notation: String) {
@@ -105,15 +107,24 @@ public struct Shortcut: Sendable, Hashable {
     /// No ⌘ nor ⌃: the key types text in a field (a letter, ⇧I, #, Space, ⌫).
     public var isTyping: Bool { modifiers.isDisjoint(with: [.command, .control]) }
 
-    /// A key that edits or moves through the text of a field whatever its modifiers say: ⌫ with any modifier (⌘⌫
-    /// deletes to the start of the line), ⌘ with an arrow (⌘←, ⇧⌘↓), and the Emacs keys of the Cocoa text system
-    /// (⌃A, ⌃E, ⌃K…, `StandardKeyBinding.dict`). A menu key equivalent passes before the field that has the focus: such
-    /// a key on a menu item would act from a search field or a sheet. It is never a menu shortcut
-    /// (`ShortcutBindings.shortcut`), only a triage key, read outside text input.
+    /// A key the Cocoa text system binds to a text edit or move, so that a menu item with it would act from a search
+    /// field or a sheet (a menu key equivalent passes before the field that has the focus). Read from
+    /// `StandardKeyBinding.dict` (AppKit.framework/Resources):
+    /// - ⌫ and ⌦ alone, with ⇧, ⌥ or ⌃ (deleteBackward:, deleteWordBackward:, deleteWordForward:…), and with ⌘ alone
+    ///   (⌘⌫ is deleteToBeginningOfLine:; ⌘⌦ is not in the dictionary and is treated alike). ⌘ with another modifier is
+    ///   not a text key: ⇧⌘⌫ (Empty Trash, Clear History) and ⌥⌘⌫ (Delete Immediately) are menu keys.
+    /// - ⌘ with an arrow, with or without ⇧ (moveToLeftEndOfLine:, moveToBeginningOfDocument: and their selecting
+    ///   forms). Adding ⌃ or ⌥ makes a menu key: ⌃⌘← and ⌃⌘→ (Show Previous and Next Space), ⌥⌘←.
+    ///   ⌥ with an arrow (moveWordLeft:, ⌥↓ moves to the paragraph's end) is bound by the text system too but is not
+    ///   counted here, as in 0.1.0 to 0.1.2: apps use ⌥↑ and ⌥↓ as menu keys for the previous and next message.
+    /// - The Emacs keys: ⌃ and a letter of the text system (⌃A, ⌃E, ⌃K…), with ⇧ or not.
+    /// Such a key is never a menu shortcut (`ShortcutBindings.shortcut`), only a triage key, read outside text input.
     public var editsText: Bool {
-        if key == Self.delete { return true }
+        if key == Self.delete || key == Self.forwardDelete {
+            return !modifiers.contains(.command) || modifiers == [.command]
+        }
         if [Self.leftArrow, Self.rightArrow, Self.upArrow, Self.downArrow].contains(key) {
-            return modifiers.contains(.command) && !modifiers.contains(.option)
+            return modifiers.contains(.command) && modifiers.isSubset(of: [.command, .shift])
         }
         if modifiers.contains(.control), modifiers.isSubset(of: [.control, .shift]) {
             return Self.textControlKeys.contains(Character(key.lowercased()))
@@ -133,7 +144,7 @@ public struct Shortcut: Sendable, Hashable {
     private static let modifierBySymbol: [Character: Modifier] = ["⌃": .control, "⌥": .option, "⇧": .shift, "⌘": .command]
 
     private static let keyNames: [Character: String] = [
-        downArrow: "↓", upArrow: "↑", leftArrow: "←", rightArrow: "→", returnKey: "↩", delete: "⌫", escape: "⎋",
+        downArrow: "↓", upArrow: "↑", leftArrow: "←", rightArrow: "→", returnKey: "↩", delete: "⌫", forwardDelete: "⌦", escape: "⎋",
         tab: "⇥",
     ]
 

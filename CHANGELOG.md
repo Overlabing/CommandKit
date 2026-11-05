@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.1.3
+
+### Fixed
+
+- **`Shortcut.editsText` is narrowed to the keys the Cocoa text system binds** (`StandardKeyBinding.dict`,
+  AppKit.framework/Resources). It flagged ⌘ with an arrow whatever else was held, and ⌫ with any modifier, so
+  `ShortcutBindings.shortcut(_:)` refused as menu keys ⌃⌘← and ⌃⌘→ (Show Previous and Next Space) and ⇧⌘⌫ (Empty
+  Trash, Clear History…), and `record` refused them outside the triage. Now:
+  - ⌘ with an arrow edits text only with ⇧ or alone (⌘←, ⇧⌘←…). ⌃⌘←, ⌃⌘→, ⌃⌘↑, ⌃⌘↓ and ⌃⇧⌘ arrows become menu keys.
+    ⌥⌘ arrows stay menu keys, as before.
+  - ⌫ edits text alone and with ⇧, ⌥ or ⌃ (⌥⌫ deleteWordBackward:, ⌃⌫), and with ⌘ alone (⌘⌫
+    deleteToBeginningOfLine:). ⌘ with another modifier no longer does: ⇧⌘⌫, ⌥⌘⌫ (Delete Immediately), ⌃⌘⌫ become menu keys.
+  - ⌥ with an arrow is bound by the text system (moveWordLeft:, ⌥↓ paragraph end) but stays a menu key, unchanged since
+    0.1.0: apps use ⌥↑ and ⌥↓ for the previous and next message. Counting it is a one-line change if an app wants it.
+  - The Emacs ⌃ letters are unchanged.
+  - Keys that become menu keys: ⌃⌘←, ⌃⌘→, ⌃⌘↑, ⌃⌘↓ (also with ⇧), ⇧⌘⌫, ⌥⌘⌫, ⌃⌘⌫. Keys that stop being menu keys: none
+    except ⌦ alone, ⇧⌦, ⌥⌦, ⌃⌦ and ⌘⌦, which 0.1.2 could not even write (see Added).
+
+### Added
+
+- `Shortcut.forwardDelete` (⌦, `NSDeleteFunctionKey`): a key with a notation (`⌥⌦`), kept with its modifiers by
+  `Shortcut(characters:modifiers:)`, and counted by `editsText` like ⌫. Before, ⌦ was an unknown character that edited
+  nothing. A stored `"⌦"` that 0.1.2 ignored is now read.
+
+### Changed
+
+- The dependency on AppSupportKit is `.upToNextMinor(from: "0.1.1")` instead of an exact pin. Kits depend on each other
+  by patch range; apps pin exact (0.1.2 pinned AppSupportKit `exact: "0.1.2"`, which this release replaces).
+
 ## 0.1.2
 
 ### Added

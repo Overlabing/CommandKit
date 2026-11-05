@@ -281,6 +281,31 @@ import Testing
         #expect(!other.isOverridden(.archive))
     }
 
+    @Test func theSpaceSwitchKeysAndEmptyTrashAreMenuKeysAndRecordable() throws {
+        let previous = key(Shortcut.leftArrow, [.control, .command])
+        let next = key(Shortcut.rightArrow, [.control, .command])
+        let clear = key(Shortcut.delete, [.shift, .command])
+        let stored = ShortcutBindings(set: Sets.standard, overrides: [.previous: [previous], .next: [next], .snooze: [clear]])
+        #expect(stored.shortcut(.previous) == previous)
+        #expect(stored.shortcut(.next) == next)
+        #expect(stored.shortcut(.snooze) == clear)
+        var bindings = ShortcutBindings(set: Sets.standard)
+        try bindings.record(previous, for: .nextSpace, rules: Rules.standard)
+        try bindings.record(clear, for: .pin, rules: Rules.standard)
+        #expect(bindings.shortcut(.nextSpace) == previous)
+        #expect(bindings.shortcut(.pin) == clear)
+    }
+
+    @Test func aKeyThatEditsTextIsStillNoMenuKeyAndRefusedOutsideTheTriage() {
+        let line = key(Shortcut.leftArrow, [.command])
+        let bindings = ShortcutBindings(set: Sets.standard, overrides: [.nextSpace: [line, key("n", [.control, .command])]])
+        #expect(bindings.shortcut(.nextSpace) == key("n", [.control, .command]))
+        var other = ShortcutBindings(set: Sets.standard)
+        #expect(throws: ShortcutBindingError<Command>.editsText(line)) {
+            try other.record(line, for: .nextSpace, rules: Rules.standard)
+        }
+    }
+
     @Test func unbindingACommandLeavesItWithNoKeyAndResetUndoesIt() throws {
         var bindings = ShortcutBindings(set: Sets.standard)
         try bindings.unbind(.archive, rules: Rules.standard)

@@ -71,21 +71,46 @@ import Testing
         #expect(throws: DecodingError.self) { try JSONDecoder().decode([Shortcut].self, from: Data(#"["⇧3"]"#.utf8)) }
     }
 
-    @Test func textEditingKeys() {
-        for editing in [
-            key(Shortcut.delete), key(Shortcut.delete, [.command]), key(Shortcut.delete, [.option]),
-            key(Shortcut.downArrow, [.command]), key(Shortcut.leftArrow, [.command, .shift]),
-            key("e", [.control]), key("a", [.control]), key("k", [.control]), key("E", [.control, .shift]),
-        ] {
-            #expect(editing.editsText, "\(editing.symbols)")
-        }
-        for menu in [
-            key("r"), key("e", [.control, .command]), key(Shortcut.downArrow, [.option]),
-            key(Shortcut.rightArrow, [.option, .command]), key("]", [.control]), key("5", [.control]),
-            key("u", [.control]), key("e"),
-        ] {
-            #expect(!menu.editsText, "\(menu.symbols)")
-        }
+    /// The text system's bindings (`StandardKeyBinding.dict`, AppKit.framework/Resources): ⌘ and ⇧⌘ with an arrow
+    /// (moveToLeftEndOfLine:, moveToBeginningOfDocument: and their selecting forms), ⌘⌫ (deleteToBeginningOfLine:),
+    /// ⌥⌫ (deleteWordBackward:), ⌃⌫ (deleteBackwardByDecomposingPreviousCharacter:), ⌥⌦ (deleteWordForward:), and the
+    /// Emacs ⌃ letters. ⌘⌦ is NOT FOUND in the dictionary; it is refused as the line-wise counterpart of ⌘⌫.
+    @Test(arguments: [
+        key(Shortcut.delete), key(Shortcut.delete, [.shift]), key(Shortcut.delete, [.command]),
+        key(Shortcut.delete, [.option]), key(Shortcut.delete, [.control]),
+        key(Shortcut.forwardDelete), key(Shortcut.forwardDelete, [.command]), key(Shortcut.forwardDelete, [.option]),
+        key(Shortcut.leftArrow, [.command]), key(Shortcut.rightArrow, [.command]), key(Shortcut.upArrow, [.command]),
+        key(Shortcut.downArrow, [.command]), key(Shortcut.leftArrow, [.command, .shift]),
+        key(Shortcut.rightArrow, [.command, .shift]), key(Shortcut.upArrow, [.command, .shift]),
+        key(Shortcut.downArrow, [.command, .shift]),
+        key("e", [.control]), key("a", [.control]), key("k", [.control]), key("E", [.control, .shift]),
+    ])
+    func textEditingKeys(editing: Shortcut) {
+        #expect(editing.editsText, "\(editing.symbols)")
+    }
+
+    /// Menu keys: the Space switch keys (⌃⌘←, ⌃⌘→), Finder's Empty Trash (⇧⌘⌫), Delete Immediately (⌥⌘⌫), and the
+    /// others the text system does not bind. ⌥ with an arrow is bound by the text system (moveWordLeft:, ⌥↓ is
+    /// paragraph end) but stays a menu key here, as since 0.1.0: apps use ⌥↑ and ⌥↓ for the previous and next message.
+    @Test(arguments: [
+        key(Shortcut.leftArrow, [.control, .command]), key(Shortcut.rightArrow, [.control, .command]),
+        key(Shortcut.upArrow, [.control, .command]), key(Shortcut.leftArrow, [.control, .command, .shift]),
+        key(Shortcut.delete, [.shift, .command]), key(Shortcut.delete, [.option, .command]),
+        key(Shortcut.delete, [.control, .command]), key(Shortcut.forwardDelete, [.shift, .command]),
+        key(Shortcut.leftArrow, [.option, .command]), key(Shortcut.rightArrow, [.option, .command]),
+        key(Shortcut.downArrow, [.option]), key(Shortcut.leftArrow, [.option]), key(Shortcut.leftArrow, [.option, .shift]),
+        key("r"), key("e", [.control, .command]), key("]", [.control]), key("5", [.control]), key("u", [.control]), key("e"),
+    ])
+    func menuKeys(menu: Shortcut) {
+        #expect(!menu.editsText, "\(menu.symbols)")
+    }
+
+    @Test func forwardDeleteHasANotationAndKeepsItsModifiers() throws {
+        let option = key(Shortcut.forwardDelete, [.option])
+        #expect(option.notation == "⌥⌦")
+        #expect(Shortcut(notation: "⌥⌦") == option)
+        #expect(Shortcut(notation: "⇧⌘⌦") == key(Shortcut.forwardDelete, [.shift, .command]))
+        #expect(Shortcut(characters: "\u{F728}", modifiers: [.option]) == option)
     }
 
     @Test func typingKeysHaveNeitherCommandNorControl() {

@@ -1,7 +1,8 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
-// Swift 6 language mode (strict concurrency) is the default with tools 6.2. No third-party dependency.
+// Swift 6 language mode (strict concurrency) is the default with tools 6.2. No third-party dependency. Kits depend on
+// each other by patch range and apps pin exact: an app's exact AppSupportKit pin resolves inside the range.
 let package = Package(
     name: "CommandKit",
     defaultLocalization: "en",
@@ -11,7 +12,7 @@ let package = Package(
         .library(name: "CommandKitAppKit", targets: ["CommandKitAppKit"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Overlabing/AppSupportKit", exact: "0.1.2"),
+        .package(url: "https://github.com/Overlabing/AppSupportKit", .upToNextMinor(from: "0.1.1")),
     ],
     targets: [
         .target(
