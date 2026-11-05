@@ -48,6 +48,30 @@ import Testing
         #expect(Sets.control.keys(for: .archive) == [key("e", [.control])])
     }
 
+    @Test func aCommandMentionedWithNoKeyReceivesNothingAndAnUnmentionedOneInherits() throws {
+        let file = Data(#"{"id":"quiet","shortcuts":{"archive":[],"pin":["e"]}}"#.utf8)
+        let quiet = try ShortcutSet<Command>(data: file, expecting: "quiet", inheritingFrom: Sets.standard)
+        // The parent gives archive e and ⌫: mentioned with no key, it gets neither.
+        #expect(Sets.standard.keys(for: .archive) == [key("e"), key(Shortcut.delete)])
+        #expect(quiet.own[.archive] == [])
+        #expect(quiet.keys[.archive] == [])
+        #expect(quiet.keys(for: .archive).isEmpty)
+        #expect(!quiet.inherits(.archive))
+        // Not mentioned: inherits the parent's keys, minus the one this set gives pin.
+        #expect(quiet.own[.reply] == nil)
+        #expect(quiet.keys(for: .reply) == Sets.standard.keys(for: .reply))
+        #expect(quiet.keys(for: .trash) == Sets.standard.keys(for: .trash))
+        // The key the unassigned command left is free for another one.
+        let bindings = ShortcutBindings(set: quiet)
+        #expect(bindings.keys(.pin) == [key("e")])
+        #expect(bindings.owner(of: key("e")) == .pin)
+        #expect(bindings.conflicts.isEmpty)
+        // The same rule when the set is built in code.
+        let built = ShortcutSet<Command>(id: "built", own: [.archive: []], inheritingFrom: Sets.standard)
+        #expect(built.keys(for: .archive).isEmpty)
+        #expect(built.keys(for: .reply) == Sets.standard.keys(for: .reply))
+    }
+
     @Test func provenanceIsRead() {
         let menus = Sets.menus
         #expect(menus.id == "menus")
@@ -233,6 +257,40 @@ import Testing
         try bindings.record(key(Shortcut.delete), for: .archive, rules: Rules.standard)
         try bindings.record(key("y"), for: .pin, rules: Rules.standard)
         #expect(String(decoding: try bindings.data(), as: UTF8.self) == #"{"base":"letters","overrides":{"archive":["⌫"],"pin":["y"]}}"#)
+    }
+
+    @Test func anOverrideWithNoKeyLeavesTheCommandUnassignedAndTheOthersFollowTheSet() throws {
+        let bindings = ShortcutBindings(set: Sets.standard, overrides: [.archive: []])
+        #expect(Sets.standard.keys(for: .archive) == [key("e"), key(Shortcut.delete)])
+        #expect(bindings.keys(.archive).isEmpty)
+        #expect(bindings.shortcut(.archive) == nil)
+        #expect(bindings.isOverridden(.archive))
+        #expect(!bindings.isInherited(.archive))
+        #expect(bindings.helpText(title: "Archive", for: .archive) == "Archive")
+        #expect(bindings.owner(of: key("e")) == nil)
+        #expect(triage(bindings).command(for: key("e"), in: .list) == nil)
+        #expect(bindings.keys(.trash) == Sets.standard.keys(for: .trash))
+        #expect(!bindings.isOverridden(.trash))
+        // An unassigned command does not hold the key against the others.
+        var other = bindings
+        #expect(throws: Never.self) { try other.record(key("e"), for: .pin, rules: Rules.standard) }
+        #expect(other.keys(.pin) == [key("e")])
+        // Reset gives the set's keys back.
+        other.reset(.archive)
+        #expect(other.keys(.archive) == Sets.standard.keys(for: .archive))
+        #expect(!other.isOverridden(.archive))
+    }
+
+    @Test func anEmptyOverrideSurvivesStorageByteForByte() throws {
+        let bindings = ShortcutBindings(set: Sets.letters, overrides: [.archive: [], .pin: [key("y")]])
+        let data = try bindings.data()
+        #expect(String(decoding: data, as: UTF8.self) == #"{"base":"letters","overrides":{"archive":[],"pin":["y"]}}"#)
+        let (read, ignored) = try ShortcutBindings.read(data, sets: Sets.all, standard: .standard)
+        #expect(ignored.isEmpty)
+        #expect(read == bindings)
+        #expect(read.overrides[.archive] == [])
+        #expect(read.keys(.archive).isEmpty && read.isOverridden(.archive))
+        #expect(try read.data() == data)
     }
 
     @Test func anUnknownStoredOverrideIsIgnoredNotEverything() throws {

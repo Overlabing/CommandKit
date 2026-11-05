@@ -55,6 +55,12 @@ document, either as a list or with a reason each; they inherit the parent set's 
 gives to another command, and a reference marks them. Commands the parent has and the file does not mention inherit
 silently.
 
+A command listed under `shortcuts` with an empty list (`"snooze": []`) is unassigned: it receives nothing from the
+parent set. A command the file does not mention inherits. Mentioning is what stops inheritance, not having keys. The
+user's overrides follow the same rule: `overrides[command] = []` means no shortcut (`isOverridden` is true, `keys` is
+empty, and the set's keys are not used), while a command with no override follows the set. An empty override is stored
+as `"command": []` and read back unchanged.
+
 ## Rules
 
 `BindingRules` is data the app gives: the commands whose keys never change, the reserved keys, keys only one command

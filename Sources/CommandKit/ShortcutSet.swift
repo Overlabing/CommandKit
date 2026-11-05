@@ -4,6 +4,10 @@ import Foundation
 /// being the menu's, the others aliases a triage table also reads. A command the set does not bind inherits the parent
 /// set's keys, minus any key the set already gives to another command. Never edited at run time: the user's changes
 /// are `ShortcutBindings` overrides.
+///
+/// Mentioning a command is what stops inheritance, not having keys: a command listed with no key (`"x": []` in a file,
+/// `own[x] = []` in code) is deliberately unassigned and receives nothing from the parent, while a command the set does
+/// not list inherits. `ShortcutBindings` applies the same rule to the user's overrides.
 public struct ShortcutSet<ID: CommandIdentifier>: Sendable, Hashable, Identifiable {
     /// One key of a command, with where it comes from.
     public struct Binding: Sendable, Hashable {
@@ -25,12 +29,13 @@ public struct ShortcutSet<ID: CommandIdentifier>: Sendable, Hashable, Identifiab
     public let checked: String?
     /// A remark on the whole set (how the source was read, what to re-check).
     public let note: String?
-    /// The keys this set defines itself, first the menu's.
+    /// The keys this set defines itself, first the menu's. A command present with an empty list is unassigned.
     public let own: [ID: [Binding]]
     /// Commands the source was checked for and does not document, with the reason when the file gives one. They
     /// inherit, and a reference says so.
     public let notFound: [ID: String?]
-    /// Every command's keys once inheritance is applied.
+    /// Every command's keys once inheritance is applied. A command the set mentions keeps exactly its own keys, even
+    /// none; only a command it does not mention gets its parent's.
     public let keys: [ID: [Shortcut]]
 
     public init(
@@ -67,7 +72,8 @@ public struct ShortcutSet<ID: CommandIdentifier>: Sendable, Hashable, Identifiab
     ///       "notFound": ["<command>"] }
     ///
     /// A key is its notation, or an object with the notation and its `from`. `notFound` is a list of commands, or an
-    /// object mapping each command to its reason. Every field but `id` and `shortcuts` is optional.
+    /// object mapping each command to its reason. Every field but `id` and `shortcuts` is optional. A command listed
+    /// under `shortcuts` with no key (`"x": []`) is unassigned: it inherits nothing, unlike a command left out.
     public init(data: Data, expecting id: String, inheritingFrom parent: ShortcutSet?) throws {
         let file = try JSONDecoder().decode(File.self, from: data)
         guard file.id == id else { throw ShortcutSetError.mismatchedID(expected: id, found: file.id) }

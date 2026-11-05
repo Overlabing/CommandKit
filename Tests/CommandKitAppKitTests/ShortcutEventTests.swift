@@ -1,7 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import CommandKit
-import CommandKitAppKit
+@testable import CommandKitAppKit
 import Testing
 
 @MainActor
@@ -45,6 +45,64 @@ import Testing
         #expect(!monitor.offer(press("", ignoring: "", [.option])))
         #expect(offered == [Shortcut("e", []), Shortcut("j", [])])
         #expect(!monitor.isInstalled)
+    }
+
+    /// A fake AppKit registration that counts what is added and removed.
+    @MainActor private final class Registry {
+        var live = 0
+        var added = 0
+        var removed = 0
+        func monitor(_ handler: @escaping @MainActor (NSEvent, Shortcut) -> Bool = { _, _ in false }) -> LocalKeyMonitor {
+            LocalKeyMonitor(
+                handler: handler,
+                register: { _ in
+                    self.live += 1
+                    self.added += 1
+                    return self.added
+                },
+                unregister: { _ in
+                    self.live -= 1
+                    self.removed += 1
+                })
+        }
+    }
+
+    @Test func aFreedMonitorRemovesItsRegistration() {
+        let registry = Registry()
+        var monitor: LocalKeyMonitor? = registry.monitor()
+        monitor?.install()
+        monitor?.install()
+        #expect(registry.live == 1 && monitor?.isInstalled == true)
+        monitor = nil
+        #expect(registry.live == 0 && registry.removed == 1)
+    }
+
+    @Test func removingByHandThenFreeingRemovesOnce() {
+        let registry = Registry()
+        var monitor: LocalKeyMonitor? = registry.monitor()
+        monitor?.install()
+        monitor?.remove()
+        #expect(registry.live == 0 && monitor?.isInstalled == false)
+        monitor = nil
+        #expect(registry.removed == 1)
+    }
+
+    @Test func aMonitorNeverInstalledRegistersAndRemovesNothing() {
+        let registry = Registry()
+        var monitor: LocalKeyMonitor? = registry.monitor()
+        #expect(monitor != nil)
+        monitor = nil
+        #expect(registry.added == 0 && registry.removed == 0)
+    }
+
+    @Test func theRealRegistrationComesAndGoesWithTheMonitor() {
+        var monitor: LocalKeyMonitor? = LocalKeyMonitor { _, _ in false }
+        monitor?.install()
+        #expect(monitor?.isInstalled == true)
+        monitor?.remove()
+        #expect(monitor?.isInstalled == false)
+        monitor?.install()
+        monitor = nil
     }
 }
 #endif

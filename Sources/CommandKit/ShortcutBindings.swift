@@ -3,11 +3,17 @@ import Foundation
 /// The user's shortcuts: a predefined set plus their own changes, command by command. Menus, triage tables, a palette,
 /// buttons' help and a shortcuts reference all read their keys here. The app stores `data()` under its own key.
 ///
+/// An override with no key (`overrides[command] = []`) is the user's explicit "no shortcut": it wins over the set, the
+/// command has no key, and `isOverridden` is true. Only a command with no override at all follows the set.
+///
+/// Equality and hashing compare the whole value, the set and every override, not the set's id alone.
+///
 /// One command per key in the whole app: menu shortcuts work in every context, so a key is unique everywhere, not per
 /// context. `record(_:for:rules:)` refuses a key that breaks that or the app's `BindingRules`.
 public struct ShortcutBindings<ID: CommandIdentifier>: Sendable, Hashable {
     public private(set) var set: ShortcutSet<ID>
-    /// The user's keys for a command, replacing the set's (first the menu's).
+    /// The user's keys for a command, replacing the set's (first the menu's). An empty list leaves the command
+    /// unassigned; a command absent from here follows the set.
     public private(set) var overrides: [ID: [Shortcut]]
 
     public init(set: ShortcutSet<ID>, overrides: [ID: [Shortcut]] = [:]) {
