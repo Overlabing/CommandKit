@@ -10,7 +10,7 @@ and the key it stores the bindings under. The kit's own strings use English keys
 
 | Product | What it holds |
 |---|---|
-| `CommandKit` | `CommandIdentifier`; `Shortcut` (notation, menu symbols, normalization of a typed key, keys that edit text); `ShortcutSet` (data files, inheritance from a parent set, each key's source note, absent commands and why); `ShortcutBindings` (a set plus the user's overrides, the menu key, conflicts, recording, storage); `BindingRules`; `ShortcutReference` (sections for a help panel and a settings pane); `TriageTable` (a key and a focus give a command); `PaletteSearch`, `PaletteResults`, `PaletteRecents` (accent-tolerant fuzzy ranking, shortcut queries, recent entries) |
+| `CommandKit` | `CommandIdentifier`; `Shortcut` (notation, menu symbols, normalization of a typed key, keys that edit text); `ShortcutSet` (data files, inheritance from a parent set, each key's source note, absent commands and why); `ShortcutBindings` (a set plus the user's overrides, the menu key, conflicts, recording, unbinding, storage); `BindingRules`; `ShortcutReference` (sections for a help panel and a settings pane); `TriageTable` (a key and a focus give a command); `PaletteSearch`, `PaletteResults`, `PaletteRecents` (accent-tolerant fuzzy ranking, shortcut queries, recent entries) |
 | `CommandKitAppKit` | macOS only: `Shortcut(event:)`, the modifier flags both ways, and `LocalKeyMonitor`, the app's single entry point for triage keys |
 
 ## Using it
@@ -60,6 +60,16 @@ parent set. A command the file does not mention inherits. Mentioning is what sto
 user's overrides follow the same rule: `overrides[command] = []` means no shortcut (`isOverridden` is true, `keys` is
 empty, and the set's keys are not used), while a command with no override follows the set. An empty override is stored
 as `"command": []` and read back unchanged.
+
+`unbind(_:rules:)` writes that empty override, the user's explicit « no shortcut »: the command's keys, the set's
+included, are gone and free for another command, `isOverridden` is true and `isInherited` false. It does so even for a
+command the set already leaves without a key. A command `BindingRules.fixed` keeps cannot be unbound: it throws
+`.notRebindable`, as `record` does, and nothing changes. `reset(_:)` undoes it.
+
+```swift
+try bindings.unbind(.snooze, rules: rules)   // no shortcut for Snooze
+bindings.reset(.snooze)                      // the set's keys again
+```
 
 ## Rules
 

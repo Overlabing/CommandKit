@@ -281,6 +281,81 @@ import Testing
         #expect(!other.isOverridden(.archive))
     }
 
+    @Test func unbindingACommandLeavesItWithNoKeyAndResetUndoesIt() throws {
+        var bindings = ShortcutBindings(set: Sets.standard)
+        try bindings.unbind(.archive, rules: Rules.standard)
+        #expect(bindings.overrides == [.archive: []])
+        #expect(bindings.keys(.archive).isEmpty)
+        #expect(bindings.shortcut(.archive) == nil)
+        #expect(bindings.isOverridden(.archive))
+        #expect(!bindings.isInherited(.archive))
+        #expect(bindings.owner(of: key("e")) == nil)
+        #expect(bindings.keys(.trash) == Sets.standard.keys(for: .trash))
+        #expect(bindings == ShortcutBindings(set: Sets.standard, overrides: [.archive: []]))
+        bindings.reset(.archive)
+        #expect(bindings.keys(.archive) == Sets.standard.keys(for: .archive))
+        #expect(!bindings.isOverridden(.archive))
+        #expect(bindings == ShortcutBindings(set: Sets.standard))
+    }
+
+    @Test func unbindingACommandThatInheritsMakesItOverriddenNotInherited() throws {
+        var bindings = ShortcutBindings(set: Sets.menus)
+        let inheriting = Command.allCases.first { Sets.menus.inherits($0) && !Sets.menus.keys(for: $0).isEmpty }
+        let command = try #require(inheriting)
+        #expect(bindings.isInherited(command))
+        try bindings.unbind(command, rules: Rules.standard)
+        #expect(bindings.keys(command).isEmpty)
+        #expect(bindings.isOverridden(command))
+        #expect(!bindings.isInherited(command))
+    }
+
+    @Test func unbindingFreesTheKeysForAnotherCommand() throws {
+        var bindings = ShortcutBindings(set: Sets.standard)
+        #expect(throws: ShortcutBindingError<Command>.taken(key("e"), by: .archive)) {
+            try bindings.record(key("e"), for: .pin, rules: Rules.standard)
+        }
+        try bindings.unbind(.archive, rules: Rules.standard)
+        try bindings.record(key("e"), for: .pin, rules: Rules.standard)
+        #expect(bindings.keys(.pin) == [key("e")])
+        #expect(bindings.conflicts.isEmpty)
+    }
+
+    @Test func unbindingACommandThatAlreadyHasNoKeyStillRecordsTheChoice() throws {
+        let unassigned = set(#"{"id": "bare", "shortcuts": { "snooze": [], "pin": ["p"] }}"#, "bare", inheritingFrom: nil)
+        var bindings = ShortcutBindings(set: unassigned)
+        #expect(bindings.keys(.snooze).isEmpty)
+        #expect(!bindings.isOverridden(.snooze))
+        try bindings.unbind(.snooze, rules: Rules.standard)
+        #expect(bindings.overrides == [.snooze: []])
+        #expect(bindings.isOverridden(.snooze))
+    }
+
+    @Test func aFixedCommandCannotBeUnboundAndNothingChanges() {
+        var bindings = ShortcutBindings(set: Sets.standard)
+        let before = bindings
+        #expect(throws: ShortcutBindingError.notRebindable(Command.settings)) {
+            try bindings.unbind(.settings, rules: Rules.standard)
+        }
+        #expect(throws: ShortcutBindingError.notRebindable(Command.close)) {
+            try bindings.unbind(.close, rules: Rules.standard)
+        }
+        #expect(bindings == before)
+        #expect(bindings.keys(.settings) == Sets.standard.keys(for: .settings))
+    }
+
+    @Test func anUnboundCommandIsStoredAsAnEmptyListAndReadBackUnchanged() throws {
+        var bindings = ShortcutBindings(set: Sets.letters)
+        try bindings.record(key("y"), for: .pin, rules: Rules.standard)
+        try bindings.unbind(.archive, rules: Rules.standard)
+        let data = try bindings.data()
+        #expect(String(decoding: data, as: UTF8.self) == #"{"base":"letters","overrides":{"archive":[],"pin":["y"]}}"#)
+        let (read, ignored) = try ShortcutBindings.read(data, sets: Sets.all, standard: .standard)
+        #expect(ignored.isEmpty)
+        #expect(read == bindings)
+        #expect(read.isOverridden(.archive) && read.keys(.archive).isEmpty)
+        #expect(try read.data() == data)
+    }
+
     @Test func anEmptyOverrideSurvivesStorageByteForByte() throws {
         let bindings = ShortcutBindings(set: Sets.letters, overrides: [.archive: [], .pin: [key("y")]])
         let data = try bindings.data()

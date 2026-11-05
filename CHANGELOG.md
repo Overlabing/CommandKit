@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.2
+
+### Added
+
+- `ShortcutBindings.unbind(_:rules:)`, symmetric to `record(_:for:rules:)`: the user's explicit « no shortcut » for a
+  command. It writes the empty override (`overrides[command] = []`): the command has no keys, `isOverridden` is true,
+  `isInherited` is false, and its former keys are free for another command. The override is written even when the set
+  already leaves the command without a key, so the choice is recorded. A command that `rules.fixed` keeps is refused
+  with `ShortcutBindingError.notRebindable`, as `record` does, and nothing changes. `reset(_:)` undoes it; the stored
+  JSON keeps `"command": []` and reads back unchanged.
+
+### Changed
+
+- The dependency on AppSupportKit moves from `exact: "0.1.1"` to `exact: "0.1.2"`, so that an app pinning both kits at
+  0.1.2 resolves one version. CommandKit uses only `Localization`, which did not change.
+
 ## 0.1.1
 
 ### Fixed

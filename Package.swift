@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "CommandKitAppKit", targets: ["CommandKitAppKit"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Overlabing/AppSupportKit", exact: "0.1.1"),
+        .package(url: "https://github.com/Overlabing/AppSupportKit", exact: "0.1.2"),
     ],
     targets: [
         .target(

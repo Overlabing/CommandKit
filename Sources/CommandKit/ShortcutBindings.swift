@@ -87,6 +87,17 @@ public struct ShortcutBindings<ID: CommandIdentifier>: Sendable, Hashable {
         overrides[command] = keys == set.keys(for: command) ? nil : keys
     }
 
+    /// The user's explicit "no shortcut" for `command`: every key goes, the set's included. The command has no key
+    /// (`keys` is empty), `isOverridden` is true and `isInherited` false, and the keys it had are free for another
+    /// command. Stored as `"command": []`; `reset(_:)` gives the set's keys back. It writes the empty override even
+    /// when the set already gives the command no key, so the choice is recorded.
+    ///
+    /// Throws, changing nothing, `.notRebindable` for a command `rules` keep fixed, as `record(_:for:rules:)` does.
+    public mutating func unbind(_ command: ID, rules: BindingRules<ID>) throws(ShortcutBindingError<ID>) {
+        guard rules.isRebindable(command) else { throw .notRebindable(command) }
+        overrides[command] = []
+    }
+
     /// The set's keys again for `command`.
     public mutating func reset(_ command: ID) {
         overrides[command] = nil
